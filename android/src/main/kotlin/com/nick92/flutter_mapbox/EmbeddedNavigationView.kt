@@ -440,7 +440,7 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
 
     private fun addPOIAnnotations(pois: HashMap<*, *>) {
         val annotationApi = mapView?.annotations
-        pointAnnotationManager = annotationApi.createPointAnnotationManager()
+        pointAnnotationManager = annotationApi!!.createPointAnnotationManager()
 
         val parkingImage = ContextCompat.getDrawable(
             context,
