@@ -382,6 +382,7 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
                 .applyDefaultNavigationOptions()
                 .applyLanguageAndVoiceUnitOptions(context)
                 .coordinatesList(wayPoints)
+                .bannerInstructions(bannerInstructionsEnabled)
                 .waypointIndicesList(listOf(0, wayPoints.lastIndex))
                 .excludeList(excludeList)
                 .language(navigationLanguage)
@@ -492,9 +493,9 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
         mapboxNavigation.setNavigationRoutes(listOf())
         // stop simulation
         mapboxReplayer.stop()
-
         PluginUtilities.sendEvent(MapBoxEvents.NAVIGATION_CANCELLED)
-
+        mapboxNavigation.stopTripSession()
+        mapboxNavigation.onDestroy()
     }
 
     private fun startNavigation(methodCall: MethodCall, result: MethodChannel.Result) {
@@ -559,6 +560,8 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
             mapboxReplayer.stop()
 
         mapboxNavigation.stopTripSession()
+        mapboxNavigation.onDestroy()
+
     }
 
     private fun updateCamera(methodCall: MethodCall, result: MethodChannel.Result) {
@@ -716,6 +719,7 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
         routeLineView.cancel()
         speechApi.cancel()
         voiceInstructionsPlayer.shutdown()
+        mapboxNavigation.onDestroy()
     }
 
     //Flutter stream listener delegate methods
