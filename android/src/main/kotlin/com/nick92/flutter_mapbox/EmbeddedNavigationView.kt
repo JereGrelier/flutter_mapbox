@@ -475,8 +475,9 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
         activity?.let { FullscreenNavigationLauncher.startNavigation(it, wayPoints) }
     }
 
-    private fun addPOIs(methodCall: MethodCall, result: MethodChannel.Result) {
-        val arguments = methodCall.arguments as? Map<*, *>
+    private fun addPOIAnnotations(pois: HashMap<*, *>) {
+        val annotationApi = mapView?.annotations
+        pointAnnotationManager = annotationApi!!.createPointAnnotationManager()
 
         if(arguments != null) {
             val groupName = arguments["group"] as? String
