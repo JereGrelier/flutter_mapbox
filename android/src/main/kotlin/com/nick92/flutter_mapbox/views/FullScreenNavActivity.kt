@@ -471,6 +471,9 @@ class FullscreenNavActivity : AppCompatActivity() {
         binding.routeOverview.visibility = View.INVISIBLE
         binding.tripProgressView.visibility = View.INVISIBLE
 
+        // stop navigation session
+        mapboxNavigation.stopTripSession()
+
         sendEvent(MapBoxEvents.NAVIGATION_CANCELLED)
 
         // end the intent
