@@ -1,3 +1,71 @@
+## 0.9.3
+
+* android annotiation id work
+
+## 0.9.2
+
+* roll-back mapbox version
+
+## 0.9.1
+
+* add id to waypoints object 
+
+## 0.9.0
+
+* remove android deprecated methods
+
+
+## 0.8.9
+
+* amend overview padding values
+* change weight measurment type to metricTons
+
+
+## 0.8.8
+
+* add back zoomLevel var
+
+
+## 0.8.7
+
+* add back zoomLevel var
+
+
+## 0.8.6
+
+* add back zoomLevel var
+
+
+## 0.8.5
+
+* add back zoomLevel var
+
+
+## 0.8.4
+
+* add back zoomLevel var
+
+
+## 0.8.3
+
+* add back zoomLevel var
+
+
+## 0.8.2
+
+* try to resolve android issue
+
+
+## 0.8.1
+
+* try to resolve android issue
+
+
+## 0.8.0
+
+* fix iOS double conversion error
+
+
 ## 0.7.9
 
 * return zoom level to flutter work

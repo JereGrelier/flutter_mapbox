@@ -14,6 +14,7 @@ import android.os.Bundle
 import android.view.View
 import android.widget.Toast
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
 import com.mapbox.api.directions.v5.DirectionsCriteria
 import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.bindgen.Expected
@@ -48,6 +49,9 @@ import com.mapbox.navigation.core.MapboxNavigation
 import com.mapbox.navigation.core.MapboxNavigationProvider
 import com.mapbox.navigation.core.directions.session.RoutesObserver
 import com.mapbox.navigation.core.formatter.MapboxDistanceFormatter
+import com.mapbox.navigation.core.lifecycle.MapboxNavigationApp
+import com.mapbox.navigation.core.lifecycle.MapboxNavigationObserver
+import com.mapbox.navigation.core.lifecycle.requireMapboxNavigation
 import com.mapbox.navigation.core.replay.MapboxReplayer
 import com.mapbox.navigation.core.replay.ReplayLocationEngine
 import com.mapbox.navigation.core.replay.route.ReplayProgressObserver
@@ -127,22 +131,20 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
         }
 
         // initialize Mapbox Navigation
-        mapboxNavigation = if (MapboxNavigationProvider.isCreated()) {
-            MapboxNavigationProvider.retrieve()
-        } else if (simulateRoute) {
-            MapboxNavigationProvider.create(
-                NavigationOptions.Builder(context)
-                    .accessToken(token)
-                    // .locationEngine(replayLocationEngine)
-                    .build()
-            )
-        } else {
-            MapboxNavigationProvider.create(
-                NavigationOptions.Builder(context)
+        MapboxNavigationApp.setup(
+            NavigationOptions.Builder(context)
                     .accessToken(token)
                     .build()
-            )
-        }
+        )
+
+        MapboxNavigationApp
+            .setup(NavigationOptions.Builder(context)
+                    .accessToken(token)
+                    .build())
+            .attach(this.activity as LifecycleOwner)
+
+
+        mapboxNavigation = MapboxNavigationApp.current()!!
 
         // initialize Navigation Camera
         viewportDataSource = MapboxNavigationViewportDataSource(mapboxMap)
@@ -212,7 +214,6 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
         )
         voiceInstructionsPlayer = MapboxVoiceInstructionsPlayer(
             activity,
-            token,
             navigationLanguage
         )
 
@@ -473,7 +474,7 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
     }
 
     private fun beginFullScreenNavigation() {
-        activity?.let { FullscreenNavigationLauncher.startNavigation(it, wayPoints) }
+        activity.let { FullscreenNavigationLauncher.startNavigation(it, wayPoints) }
     }
 
     private fun addPOIAnnotations(pois: HashMap<*, *>) {
@@ -513,9 +514,9 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
     }
 
     private fun addPOIAnnotations(groupName: String, poiImage: Bitmap, iconSize: Double, pois: HashMap<*, *>) {
-
         for (item in pois) {
             val poi = item.value as HashMap<*, *>
+            val id = poi["Id"] as String
             val name = poi["Name"] as String
             val latitude = poi["Latitude"] as Double
             val longitude = poi["Longitude"] as Double
@@ -530,20 +531,21 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
             pointAnnotationOptions.textSize = 12.0
 
             val pointAnnotaion = MapBoxPointAnnotaions()
+            pointAnnotaion.id = id
             pointAnnotaion.groupName = groupName
             pointAnnotaion.pointAnnotationOptions = pointAnnotationOptions
 
-            if(!containsName(name)) {
+            if (!containsName(id)) {
                 listOfPoints.add(pointAnnotaion)
             }
         }
 
         val points: MutableList<PointAnnotationOptions> = mutableListOf()
 
-        for(point in listOfPoints){
+        for (point in listOfPoints) {
             points.add(point.pointAnnotationOptions!!)
         }
-
+        
         // Add the resulting pointAnnotation to the map.
         pointAnnotationManager.create(points)
     }
@@ -572,7 +574,7 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
 
     private fun containsName(nameToCheck: String): Boolean {
         for (point in listOfPoints) {
-            if (point.pointAnnotationOptions!!.textField == nameToCheck) {
+            if (point.id == nameToCheck) {
                 return true
             }
         }
@@ -857,7 +859,6 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
     var durationRemaining: Double? = null
     var centerCoords: MutableList<Double> = mutableListOf()
     var alternatives = true
-    var zoomLevel = 0.0
 
     var mapMoved = false
 
@@ -881,6 +882,7 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
     private var isBuildingRoute = false
     private var isNavigationInProgress = false
     private var isNavigationCanceled = false
+    private var zoomLevel = 0.0
 
     val BUTTON_ANIMATION_DURATION = 1500L
 
@@ -949,17 +951,17 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
     private val pixelDensity = Resources.getSystem().displayMetrics.density
     private val overviewPadding: EdgeInsets by lazy {
         EdgeInsets(
-            140.0 * pixelDensity,
+            160.0 * pixelDensity,
             40.0 * pixelDensity,
-            120.0 * pixelDensity,
+            160.0 * pixelDensity,
             40.0 * pixelDensity
         )
     }
     private val landscapeOverviewPadding: EdgeInsets by lazy {
         EdgeInsets(
-            130.0 * pixelDensity,
+            140.0 * pixelDensity,
             380.0 * pixelDensity,
-            110.0 * pixelDensity,
+            130.0 * pixelDensity,
             20.0 * pixelDensity
         )
     }
@@ -1301,7 +1303,12 @@ open class EmbeddedNavigationView(ctx: Context, act: Activity, bind: MapActivity
     }
 
     private val onPointAnnotationClickListener = OnPointAnnotationClickListener { annotation ->
-        selectedAnnotation = annotation.textField!!
+        val point = listOfPoints.filter {
+            it.pointAnnotationOptions!!.getPoint()!!.latitude() == annotation.point.latitude() &&
+                    it.pointAnnotationOptions!!.getPoint()!!.longitude() == annotation.point.longitude()
+        }
+
+        selectedAnnotation = point.first().id
         PluginUtilities.sendEvent(MapBoxEvents.ANNOTATION_TAPPED)
         false
     }
